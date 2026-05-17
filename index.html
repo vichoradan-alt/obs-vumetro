@@ -361,7 +361,8 @@ class OBSWebSocket {
     }
     this._send(1, {
       rpcVersion: 1,
-      eventSubscriptions: 33,
+      // Subscribe to non-high-volume events plus InputVolumeMeters (high volume)
+      eventSubscriptions: 65569,
       ...(authentication ? { authentication } : {})
     });
   }
