@@ -184,10 +184,30 @@
     flex: 1;
   }
 
+  .vu-channels {
+    display: flex;
+    gap: 12px;
+    align-items: flex-end;
+    justify-content: center;
+  }
+
+  .vu-channel-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .vu-channel-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.12em;
+  }
+
   /* barra vúmetro */
   .vu-track {
     position: relative;
-    width: 48px;
+    width: 40px;
     height: min(72vh, 680px);
     max-height: 680px;
     background: #121212;
@@ -493,7 +513,7 @@ function buildChannels() {
   const container = document.getElementById('channels');
   container.innerHTML = '';
   selectedSources.forEach(name => {
-    peakValues[name] = -Infinity;
+    peakValues[name] = [-Infinity, -Infinity];
     const id = safeid(name);
     const ch = document.createElement('div');
     ch.className = 'channel';
@@ -505,10 +525,23 @@ function buildChannels() {
           <span>-12</span><span>-18</span><span>-24</span>
           <span>-36</span><span>-48</span><span>-60</span>
         </div>
-        <div class="vu-track">
-          <div class="vu-scale"></div>
-          <div class="vu-bar"  id="bar-${id}"></div>
-          <div class="vu-peak" id="peak-${id}"></div>
+        <div class="vu-channels" id="tracks-${id}">
+          <div class="vu-channel-col" id="channel-0-${id}">
+            <div class="vu-track">
+              <div class="vu-scale"></div>
+              <div class="vu-bar" id="bar-${id}-0"></div>
+              <div class="vu-peak" id="peak-${id}-0"></div>
+            </div>
+            <div class="vu-channel-label">L</div>
+          </div>
+          <div class="vu-channel-col" id="channel-1-${id}">
+            <div class="vu-track">
+              <div class="vu-scale"></div>
+              <div class="vu-bar" id="bar-${id}-1"></div>
+              <div class="vu-peak" id="peak-${id}-1"></div>
+            </div>
+            <div class="vu-channel-label">R</div>
+          </div>
         </div>
       </div>
       <div class="ch-name">${name}</div>
@@ -530,15 +563,15 @@ function subscribeVU() {
       if (!selectedSources.includes(inp.inputName)) return;
       const id = safeid(inp.inputName);
 
-      const dbVal = getInputDb(inp);
-      updateVU(id, inp.inputName, dbVal);
+      const levels = getInputLevels(inp);
+      updateVU(id, inp.inputName, levels);
     });
   });
 }
 
-function getInputDb(inp) {
+function getInputLevels(inp) {
   const levels = inp.inputLevelsMul || inp.inputLevels || [];
-  let dbVal = -Infinity;
+  const dbValues = [];
 
   if (Array.isArray(levels) && levels.length) {
     levels.forEach(ch => {
@@ -547,45 +580,75 @@ function getInputDb(inp) {
       else if (ch && typeof ch === 'object') peak = ch.peak ?? ch.input_peak ?? ch[1] ?? -Infinity;
       else if (typeof ch === 'number') peak = ch;
 
-      const db = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
-      if (db > dbVal) dbVal = db;
+      dbValues.push(peak > 0 ? 20 * Math.log10(peak) : -Infinity);
     });
   }
 
-  if (dbVal === -Infinity) {
-    if (typeof inp.inputVolumeDb === 'number') dbVal = inp.inputVolumeDb;
-    else if (typeof inp.inputVolume === 'number' && inp.inputVolume > 0) dbVal = 20 * Math.log10(inp.inputVolume);
+  if (!dbValues.length) {
+    if (typeof inp.inputVolumeDb === 'number') dbValues.push(inp.inputVolumeDb);
+    else if (typeof inp.inputVolume === 'number' && inp.inputVolume > 0) dbValues.push(20 * Math.log10(inp.inputVolume));
+    else dbValues.push(-Infinity);
   }
 
-  return dbVal;
+  return dbValues;
 }
 
 /* ── ACTUALIZAR BARRA ── */
-function updateVU(id, name, db) {
+function updateVU(id, name, levels) {
   const MIN_DB = -60;
   const MAX_DB = 0;
+  const db = levels.reduce((max, value) => Math.max(max, value), -Infinity);
 
-  // porcentaje de ancho: 0% = silencio total, 100% = 0dBFS
-  const pct = db <= MIN_DB ? 0 : db >= MAX_DB ? 100
-    : ((db - MIN_DB) / (MAX_DB - MIN_DB)) * 100;
-
-  const bar  = document.getElementById('bar-'  + id);
-  const peak = document.getElementById('peak-' + id);
-  const dbEl = document.getElementById('db-'   + id);
-
-  if (bar)  bar.style.height = pct.toFixed(1) + '%';
+  const dbEl = document.getElementById('db-' + id);
   if (dbEl) dbEl.textContent = db === -Infinity ? '-∞ dBFS'
     : (db >= 0 ? '0.0' : db.toFixed(1)) + ' dBFS';
 
-  // peak hold
-  if (db > (peakValues[name] ?? -Infinity)) {
-    peakValues[name] = db;
-    if (peak) peak.style.top = `${100 - pct.toFixed(1)}%`;
-    clearTimeout(peakTimers[name]);
-    peakTimers[name] = setTimeout(() => {
-      peakValues[name] = -Infinity;
-      if (peak) peak.style.top = '100%';
-    }, 1500);
+  const trackCount = Math.max(levels.length, 1);
+  const bars = [
+    document.getElementById(`bar-${id}-0`),
+    document.getElementById(`bar-${id}-1`)
+  ];
+  const peaks = [
+    document.getElementById(`peak-${id}-0`),
+    document.getElementById(`peak-${id}-1`)
+  ];
+  const channels = [
+    document.getElementById(`channel-0-${id}`),
+    document.getElementById(`channel-1-${id}`)
+  ];
+
+  bars.forEach((bar, index) => {
+    const channelDb = levels[index] ?? -Infinity;
+    const pct = channelDb <= MIN_DB ? 0 : channelDb >= MAX_DB ? 100
+      : ((channelDb - MIN_DB) / (MAX_DB - MIN_DB)) * 100;
+    if (bar) bar.style.height = pct.toFixed(1) + '%';
+
+    if (peaks[index]) {
+      if (channelDb > (Array.isArray(peakValues[name]) ? peakValues[name][index] ?? -Infinity : -Infinity)) {
+        peakValues[name][index] = channelDb;
+        peaks[index].style.top = `${100 - pct.toFixed(1)}%`;
+        clearTimeout(peakTimers[name]?.[index]);
+        peakTimers[name] = peakTimers[name] || [];
+        peakTimers[name][index] = setTimeout(() => {
+          peakValues[name][index] = -Infinity;
+          peaks[index].style.top = '100%';
+        }, 1500);
+      }
+    }
+
+    if (channels[index]) {
+      channels[index].style.display = index < trackCount ? 'flex' : 'none';
+    }
+  });
+
+  if (trackCount === 1) {
+    const label1 = document.querySelector(`#channel-0-${id} .vu-channel-label`);
+    if (label1) label1.textContent = 'M';
+  } else {
+    const label0 = document.querySelector(`#channel-0-${id} .vu-channel-label`);
+    const label1 = document.querySelector(`#channel-1-${id} .vu-channel-label`);
+    if (label0) label0.textContent = 'L';
+    if (label1) label1.textContent = 'R';
   }
 }
 
