@@ -248,55 +248,53 @@
     justify-content: space-between;
     align-items: center;
     height: min(72vh, 680px);
-    font-size: 10px;
-    color: var(--muted);
+    font-size: 12px;
+    color: #fff;
     letter-spacing: 0.08em;
   }
   .vu-labels span {
     display: block;
-    width: 28px;
+    width: 34px;
     text-align: center;
+    line-height: 1.2;
   }
 
   /* nombre fuente */
   .ch-name {
-    font-size: 11px;
-    color: var(--muted);
+    font-size: 12px;
+    color: #fff;
     letter-spacing: 0.18em;
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    max-height: min(12vh, 120px);
+    max-height: min(14vh, 140px);
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   /* valor dB en vivo */
   .ch-db {
-    font-size: 11px;
+    font-size: 12px;
     color: var(--accent);
     text-align: right;
     margin-bottom: 4px;
   }
 
-  /* control de volumen (oculto por defecto, visible si desbloqueado) */
+  /* control de volumen */
   .vol-row {
     display: flex;
     align-items: center;
     gap: 10px;
     margin-top: 8px;
-    overflow: hidden;
-    max-height: 0;
-    transition: max-height 0.3s ease;
+    max-height: 40px;
   }
-  .vol-row.visible { max-height: 40px; }
-  .vol-row label { font-size: 10px; color: var(--muted); white-space: nowrap; }
+  .vol-row label { font-size: 11px; color: var(--text); white-space: nowrap; }
   .vol-row input[type=range] {
     flex: 1;
     accent-color: var(--accent);
     cursor: pointer;
   }
-  .vol-row .vol-val { font-size: 10px; color: var(--accent); min-width: 38px; text-align: right; }
+  .vol-row .vol-val { font-size: 11px; color: var(--accent); min-width: 38px; text-align: right; }
 </style>
 </head>
 <body>
