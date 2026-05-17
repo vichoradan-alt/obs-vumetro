@@ -92,11 +92,7 @@
     font-size: 11px;
     transition: background 0.15s, border-color 0.15s;
   }
-  .source-option.selected .chk {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #000;
-  }
+  .source-option.selected .chk { background: var(--accent); border-color: var(--accent); color: #000; }
   .source-option .sname { font-size: 13px; }
   #btn-monitor {
     padding: 12px;
@@ -119,18 +115,7 @@
     flex: 1;
     flex-direction: column;
     padding: 1rem;
-    gap: 0;
     overflow: hidden;
-  }
-
-  #channels {
-    flex: 1;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 16px;
-    align-items: stretch;
-    overflow-y: auto;
-    padding-right: 4px;
   }
 
   /* toolbar */
@@ -158,230 +143,265 @@
   .icon-btn:hover { color: var(--text); border-color: #444; }
   .icon-btn.active { color: var(--accent); border-color: var(--accent); }
 
-  /* canal */
+  /* contenedor de canales */
+  #channels {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    gap: 14px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 2px 12px;
+    align-items: flex-start;
+  }
+
+  /* canal individual */
   .channel {
+    position: relative;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: 14px;
-    padding: 12px 8px;
-    background: rgba(255,255,255,0.015);
+    gap: 10px;
+    padding: 18px 10px 12px;
+    background: rgba(255,255,255,0.04);
     border: 1px solid #222;
-    border-radius: 16px;
-    min-height: min(75vh, 520px);
-    max-height: 78vh;
+    border-radius: 18px;
+    min-height: min(78vh, 560px);
+    max-height: 82vh;
+    width: 130px;
+    flex: 0 0 130px;
+    overflow: hidden;
   }
 
-  .channel:last-child { border-bottom: none; }
+  /* franja de color arriba del canal */
+  .channel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: var(--accent-color, var(--accent));
+    border-radius: 18px 18px 0 0;
+  }
 
+  /* valor dB en vivo — arriba del canal */
+  .ch-db {
+    font-size: 11px;
+    color: var(--accent-color, var(--accent));
+    text-align: center;
+    letter-spacing: 0.06em;
+    height: 16px;
+    white-space: nowrap;
+  }
+
+  /* fila central: fader + vúmetros */
   .meter-row {
     display: flex;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: flex-start;
     justify-content: center;
-    gap: 16px;
-    width: 100%;
+    gap: 8px;
     flex: 1;
+    min-height: 0;
   }
 
-  .vu-channels {
+  /* ── FADER VERTICAL ── */
+  .fader-col {
     display: flex;
-    gap: 12px;
-    align-items: flex-end;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    width: 28px;
+  }
+
+  .fader-db-val {
+    font-size: 10px;
+    color: var(--accent-color, var(--accent));
+    text-align: center;
+    white-space: nowrap;
+    height: 14px;
+  }
+
+  .fader-track {
+    position: relative;
+    flex: 1;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* altura del fader: igual que .vu-track */
+  .fader-track,
+  .vu-track { height: min(62vh, 440px); }
+
+  .fader-bg {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 100%;
+    background: #2a2a2a;
+    border-radius: 3px;
+  }
+
+  .fader-fill {
+    position: absolute;
+    bottom: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    background: var(--accent-color, var(--accent));
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  .fader-thumb {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 8px;
+    background: var(--accent-color, var(--accent));
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  .fader-thumb.locked { background: #555; }
+
+  /* input range vertical invisible encima del track */
+  .fader-input {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    writing-mode: vertical-lr;
+    direction: rtl;
+    -webkit-appearance: slider-vertical;
+    appearance: slider-vertical;
+  }
+  .fader-input:disabled { cursor: not-allowed; }
+
+  /* ── VÚMETROS L/R ── */
+  .vu-col {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: 4px;
   }
 
   .vu-channel-col {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
   }
 
-  .vu-channel-label {
-    font-size: 11px;
-    color: var(--muted);
-    letter-spacing: 0.12em;
-  }
-
-  .vol-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-width: 72px;
-  }
-
-  .vol-col .vol-label {
-    font-size: 11px;
-    color: var(--text);
-    letter-spacing: 0.12em;
-  }
-
-  .vol-track {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: min(60vh, 560px);
-    padding: 6px 0;
-  }
-
-  .vol-slider {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 220px;
-    height: 24px;
-    transform: rotate(-90deg);
-    transform-origin: 50% 50%;
-    accent-color: var(--accent);
-    cursor: pointer;
-  }
-
-  .vol-slider::-webkit-slider-runnable-track {
-    height: 6px;
-    background: #333;
-    border-radius: 999px;
-  }
-  .vol-slider::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: none;
-    margin-top: -5px;
-  }
-  .vol-slider::-moz-range-track {
-    height: 6px;
-    background: #333;
-    border-radius: 999px;
-  }
-  .vol-slider::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: var(--accent);
-    border: none;
-  }
-
-  .vol-value {
-    font-size: 11px;
-    color: var(--accent);
-  }
-
-  /* barra vúmetro */
   .vu-track {
     position: relative;
-    width: 40px;
-    height: min(72vh, 680px);
-    max-height: 680px;
+    width: 24px;
     background: #121212;
-    border-radius: 24px;
+    border-radius: 14px;
     overflow: hidden;
     border: 1px solid #2d2d2d;
-    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
   }
 
-  /* gradiente fijo de fondo (escala de color) */
   .vu-scale {
     position: absolute;
     inset: 0;
-    /* verde → amarillo → rojo, de abajo (silencio) a arriba (0dB) */
     background: linear-gradient(to top,
-      #1a4a1a 0%,
-      #2d7a2d 40%,
-      #5ab55a 60%,
-      #b5b500 75%,
-      #e8c400 83%,
-      #ff6600 90%,
-      #ff2200 100%
+      #1a4a1a 0%, #2d7a2d 40%, #5ab55a 60%,
+      #b5b500 75%, #e8c400 83%, #ff6600 90%, #ff2200 100%
     );
     opacity: 0.16;
   }
 
-  /* barra activa que crece desde abajo */
   .vu-bar {
     position: absolute;
     left: 0; right: 0; bottom: 0;
     height: 0%;
     background: linear-gradient(to top,
-      #b7ff5d 0%,
-      #d7ff5d 35%,
-      #ffe55d 60%,
-      #ff9d4d 80%,
-      #ff4e4e 100%
+      #b7ff5d 0%, #d7ff5d 35%, #ffe55d 60%, #ff9d4d 80%, #ff4e4e 100%
     );
     transition: height 0.04s linear;
-    border-radius: 0 0 20px 20px;
+    border-radius: 0 0 12px 12px;
   }
 
-  /* peak hold: línea horizontal */
   .vu-peak {
     position: absolute;
     left: 0; right: 0;
     height: 2px;
     background: #ffffffcc;
-    opacity: 0.9;
     top: 100%;
     transition: top 0.1s linear;
   }
 
-  /* marcas dB */
+  .vu-channel-label {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.1em;
+  }
+
+  /* escala dB lateral */
   .vu-labels {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    align-items: center;
-    height: min(72vh, 680px);
-    font-size: 12px;
-    color: #fff;
-    letter-spacing: 0.08em;
+    height: min(62vh, 440px);
+    padding: 2px 0;
   }
   .vu-labels span {
     display: block;
-    width: 34px;
-    text-align: center;
-    line-height: 1.2;
+    font-size: 10px;
+    color: #777;
+    letter-spacing: 0.06em;
+    line-height: 1;
+    text-align: right;
+    width: 26px;
   }
 
-  /* nombre fuente */
+  /* nombre de la fuente — abajo */
   .ch-name {
-    font-size: 12px;
-    color: #fff;
-    letter-spacing: 0.18em;
-    writing-mode: vertical-rl;
-    text-orientation: mixed;
-    transform: rotate(180deg);
-    max-height: min(14vh, 140px);
+    font-size: 11px;
+    color: #aaa;
+    letter-spacing: 0.14em;
+    text-align: center;
+    max-width: 110px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-top: 2px;
   }
 
-  /* valor dB en vivo */
-  .ch-db {
-    font-size: 12px;
-    color: var(--accent);
-    text-align: right;
-    margin-bottom: 4px;
-  }
-
-  /* control de volumen */
-  .vol-row {
-    display: none;
-  }
-  .vol-col {
+  /* botones MUTE / MONITOR */
+  .channel-buttons {
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-    min-width: 64px;
+    flex-direction: row;
+    gap: 5px;
+    width: 100%;
   }
-  .vol-col .vol-label { font-size: 11px; color: var(--text); white-space: nowrap; }
-  .vol-track { display: flex; align-items: center; justify-content: center; }
-  .vol-slider { accent-color: var(--accent); cursor: pointer; }
-  .vol-value { font-size: 11px; color: var(--accent); }
+
+  .btn {
+    flex: 1;
+    padding: 8px 4px;
+    border: 1px solid #303030;
+    border-radius: 8px;
+    background: #151515;
+    color: #eee;
+    font-size: 9px;
+    letter-spacing: 0.07em;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .btn:hover:not(:disabled) { background: #1f1f1f; border-color: #444; }
+  .btn.active {
+    background: var(--accent-color, var(--accent));
+    color: #000;
+    border-color: transparent;
+  }
+  .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 </style>
 </head>
 <body>
@@ -407,17 +427,14 @@
   <div class="toolbar">
     <span class="toolbar-title">VU METER</span>
     <div class="toolbar-right">
-      <button class="icon-btn" id="btn-lock" title="Candado volumen" onclick="toggleLock()">🔒</button>
+      <button class="icon-btn" id="btn-lock" title="Bloquear todo" onclick="toggleLock()">🔒</button>
       <button class="icon-btn" title="Volver a fuentes" onclick="goSources()">＋</button>
     </div>
   </div>
   <div id="channels"></div>
 </div>
 
-
-<!-- ══════════════════════════════════════════════════════════════════
-     LIBRERÍA OBSWebSocket — no modificar
-══════════════════════════════════════════════════ -->
+<!-- ══ LIBRERÍA OBSWebSocket ══ -->
 <script>
 class OBSWebSocket {
   constructor() {
@@ -473,7 +490,6 @@ class OBSWebSocket {
     }
     this._send(1, {
       rpcVersion: 1,
-      // Subscribe to non-high-volume events plus InputVolumeMeters (high volume)
       eventSubscriptions: 65569,
       ...(authentication ? { authentication } : {})
     });
@@ -492,15 +508,16 @@ class OBSWebSocket {
 }
 </script>
 
-<!-- ══════════════════════════════════════════════════════════════════
-     APLICACIÓN — modificar acá
-══════════════════════════════════════════════════ -->
+<!-- ══ APLICACIÓN ══ -->
 <script>
 const obs = new OBSWebSocket();
-let selectedSources = [];   // nombres de fuentes elegidas
-let locked = true;          // candado de volumen
-let peakTimers = {};        // timers para decay del peak hold
-let peakValues = {};        // último peak por fuente
+let selectedSources = [];
+let locked = true;
+let peakTimers = {};
+let peakValues = {};
+let channelStates = {};
+
+const ACCENT_COLORS = ['#f25f5c','#ff9f1c','#2ec4b6','#9d4edd','#8ac926','#e8ff47','#38bdf8'];
 
 /* ── pantallas ── */
 function show(id) {
@@ -530,20 +547,14 @@ async function doConnect() {
 /* ── CARGAR FUENTES DE AUDIO ── */
 async function loadSources() {
   const { inputs } = await obs.call('GetInputList');
-
-  // Pedimos solo las que tienen tipo de audio conocido
-  // pero también aceptamos cualquiera que OBS reporte como audio
   const audioKinds = [
     'wasapi_input_capture','wasapi_output_capture',
     'pulse_input_capture','pulse_output_capture',
     'coreaudio_input_capture','coreaudio_output_capture',
     'dshow_input','alsa_input_capture'
   ];
-
-  // Filtramos por tipo conocido; si no hay ninguno mostramos todos
   let sources = inputs.filter(i => audioKinds.includes(i.inputKind));
   if (!sources.length) sources = inputs;
-
   const list = document.getElementById('source-list');
   list.innerHTML = '';
   sources.forEach(src => {
@@ -559,8 +570,7 @@ async function loadSources() {
 function toggleSource(el, name) {
   el.classList.toggle('selected');
   el.querySelector('.chk').textContent = el.classList.contains('selected') ? '✓' : '';
-  selectedSources = [...document.querySelectorAll('.source-option.selected')]
-    .map(e => e.dataset.name);
+  selectedSources = [...document.querySelectorAll('.source-option.selected')].map(e => e.dataset.name);
   document.getElementById('btn-monitor').disabled = selectedSources.length === 0;
 }
 
@@ -571,67 +581,126 @@ function goMonitor() {
   show('screen-monitor');
 }
 
-function goSources() {
-  show('screen-sources');
+function goSources() { show('screen-sources'); }
+
+/* ── dB ↔ % fader (escala -60…0 dB) ── */
+function dbToFaderPct(db) {
+  const MIN = -60, MAX = 0;
+  return Math.max(0, Math.min(100, ((db - MIN) / (MAX - MIN)) * 100));
+}
+function faderPctToDb(pct) {
+  return -60 + (pct / 100) * 60;
+}
+function vuPct(db) {
+  return db <= -60 ? 0 : db >= 0 ? 100 : ((db + 60) / 60) * 100;
 }
 
 /* ── CONSTRUIR CANALES ── */
 function buildChannels() {
   const container = document.getElementById('channels');
   container.innerHTML = '';
-  selectedSources.forEach(name => {
+
+  selectedSources.forEach((name, idx) => {
     peakValues[name] = [-Infinity, -Infinity];
+    peakTimers[name] = [null, null];
     const id = safeid(name);
+    const accent = ACCENT_COLORS[idx % ACCENT_COLORS.length];
+    const initDb = -20;
+    const initPct = dbToFaderPct(initDb);
+
     const ch = document.createElement('div');
     ch.className = 'channel';
+    ch.style.setProperty('--accent-color', accent);
+
     ch.innerHTML = `
       <div class="ch-db" id="db-${id}">— dBFS</div>
+
       <div class="meter-row">
-        <div class="vu-labels">
-          <span>0</span><span>-3</span><span>-6</span>
-          <span>-12</span><span>-18</span><span>-24</span>
-          <span>-36</span><span>-48</span><span>-60</span>
+
+        <!-- FADER VERTICAL -->
+        <div class="fader-col">
+          <div class="fader-db-val" id="fv-${id}">${initDb.toFixed(1)} dB</div>
+          <div class="fader-track" id="ft-${id}">
+            <div class="fader-bg"></div>
+            <div class="fader-fill" id="ff-${id}" style="height:${initPct}%"></div>
+            <div class="fader-thumb${locked ? ' locked' : ''}" id="fth-${id}" style="bottom:calc(${initPct}% - 4px)"></div>
+            <input class="fader-input" id="sl-${id}" type="range"
+              min="0" max="100" step="1" value="${initPct.toFixed(0)}"
+              ${locked ? 'disabled' : ''}
+              oninput="onFader('${name}','${id}',this.value)">
+          </div>
         </div>
-        <div class="vu-channels" id="tracks-${id}">
-          <div class="vu-channel-col" id="channel-0-${id}">
+
+        <!-- VÚMETROS L/R -->
+        <div class="vu-col" id="vucol-${id}">
+          <div class="vu-labels">
+            <span>0</span><span>-3</span><span>-6</span>
+            <span>-12</span><span>-18</span><span>-24</span>
+            <span>-36</span><span>-48</span><span>-60</span>
+          </div>
+          <div class="vu-channel-col" id="vuch-${id}-0">
             <div class="vu-track">
               <div class="vu-scale"></div>
               <div class="vu-bar" id="bar-${id}-0"></div>
               <div class="vu-peak" id="peak-${id}-0"></div>
             </div>
-            <div class="vu-channel-label">L</div>
+            <div class="vu-channel-label" id="lbl-${id}-0">L</div>
           </div>
-          <div class="vu-channel-col" id="channel-1-${id}">
+          <div class="vu-channel-col" id="vuch-${id}-1">
             <div class="vu-track">
               <div class="vu-scale"></div>
               <div class="vu-bar" id="bar-${id}-1"></div>
               <div class="vu-peak" id="peak-${id}-1"></div>
             </div>
-            <div class="vu-channel-label">R</div>
+            <div class="vu-channel-label" id="lbl-${id}-1">R</div>
           </div>
         </div>
+
       </div>
+
+      <!-- NOMBRE abajo -->
       <div class="ch-name">${name}</div>
-      <div class="vol-col" id="vol-${id}">
-        <div class="vol-label">VOL</div>
-        <div class="vol-track">
-          <input class="vol-slider" type="range" min="0" max="100" step="1" value="80"
-            oninput="setVol('${name}', this.value, '${id}')" />
-        </div>
-        <div class="vol-value" id="volval-${id}">80%</div>
+
+      <!-- BOTONES -->
+      <div class="channel-buttons">
+        <button class="btn" id="mute-${id}"
+          onclick="toggleMute('${name}','${id}')"
+          ${locked ? 'disabled' : ''}>MUTE</button>
+        <button class="btn" id="mon-${id}"
+          onclick="toggleMonitor('${name}','${id}')"
+          ${locked ? 'disabled' : ''}>MON</button>
       </div>`;
+
     container.appendChild(ch);
+    ensureChannelState(name, id);
   });
 }
 
+/* ── FADER ── */
+async function onFader(inputName, id, pct) {
+  if (locked) return;
+  const db = faderPctToDb(Number(pct));
+  document.getElementById('fv-' + id).textContent = db.toFixed(1) + ' dB';
+  document.getElementById('ff-' + id).style.height = pct + '%';
+  document.getElementById('fth-' + id).style.bottom = 'calc(' + pct + '% - 4px)';
+  const obsDb = pct <= 0 ? -100 : db;
+  try {
+    await obs.call('SetInputVolume', {
+      inputName,
+      inputVolumeDb: Math.round(obsDb * 10) / 10
+    });
+  } catch(e) { console.warn(e.message); }
+}
+
 /* ── SUSCRIBIRSE A InputVolumeMeters ── */
+let _vuAttached = false;
 function subscribeVU() {
-  // El evento InputVolumeMeters llega continuamente desde OBS
+  if (_vuAttached) return;
+  _vuAttached = true;
   obs.on('InputVolumeMeters', ({ inputs }) => {
     inputs.forEach(inp => {
       if (!selectedSources.includes(inp.inputName)) return;
       const id = safeid(inp.inputName);
-
       const levels = getInputLevels(inp);
       updateVU(id, inp.inputName, levels);
     });
@@ -641,105 +710,125 @@ function subscribeVU() {
 function getInputLevels(inp) {
   const levels = inp.inputLevelsMul || inp.inputLevels || [];
   const dbValues = [];
-
   if (Array.isArray(levels) && levels.length) {
     levels.forEach(ch => {
       let peak = -Infinity;
       if (Array.isArray(ch)) peak = ch[1] ?? ch[0] ?? -Infinity;
       else if (ch && typeof ch === 'object') peak = ch.peak ?? ch.input_peak ?? ch[1] ?? -Infinity;
       else if (typeof ch === 'number') peak = ch;
-
       dbValues.push(peak > 0 ? 20 * Math.log10(peak) : -Infinity);
     });
   }
-
   if (!dbValues.length) {
     if (typeof inp.inputVolumeDb === 'number') dbValues.push(inp.inputVolumeDb);
-    else if (typeof inp.inputVolume === 'number' && inp.inputVolume > 0) dbValues.push(20 * Math.log10(inp.inputVolume));
+    else if (typeof inp.inputVolume === 'number' && inp.inputVolume > 0)
+      dbValues.push(20 * Math.log10(inp.inputVolume));
     else dbValues.push(-Infinity);
   }
-
   return dbValues;
 }
 
-/* ── ACTUALIZAR BARRA ── */
+/* ── ACTUALIZAR VÚMETROS ── */
 function updateVU(id, name, levels) {
-  const MIN_DB = -60;
-  const MAX_DB = 0;
-  const db = levels.reduce((max, value) => Math.max(max, value), -Infinity);
+  const isMono = levels.length <= 1;
+  const db = levels.reduce((max, v) => Math.max(max, v), -Infinity);
 
+  // Valor dB en vivo arriba del canal
   const dbEl = document.getElementById('db-' + id);
-  if (dbEl) dbEl.textContent = db === -Infinity ? '-∞ dBFS'
-    : (db >= 0 ? '0.0' : db.toFixed(1)) + ' dBFS';
+  if (dbEl) dbEl.textContent = db <= -60 || db === -Infinity
+    ? '-∞ dBFS' : (db >= 0 ? '0.0' : db.toFixed(1)) + ' dBFS';
 
-  const trackCount = Math.max(levels.length, 1);
-  const bars = [
-    document.getElementById(`bar-${id}-0`),
-    document.getElementById(`bar-${id}-1`)
-  ];
-  const peaks = [
-    document.getElementById(`peak-${id}-0`),
-    document.getElementById(`peak-${id}-1`)
-  ];
-  const channels = [
-    document.getElementById(`channel-0-${id}`),
-    document.getElementById(`channel-1-${id}`)
-  ];
+  // Mostrar/ocultar canal derecho según mono/stereo
+  const ch1 = document.getElementById('vuch-' + id + '-1');
+  if (ch1) ch1.style.display = isMono ? 'none' : 'flex';
 
-  bars.forEach((bar, index) => {
-    const channelDb = levels[index] ?? -Infinity;
-    const pct = channelDb <= MIN_DB ? 0 : channelDb >= MAX_DB ? 100
-      : ((channelDb - MIN_DB) / (MAX_DB - MIN_DB)) * 100;
+  // Etiquetas L/R o M
+  const lbl0 = document.getElementById('lbl-' + id + '-0');
+  const lbl1 = document.getElementById('lbl-' + id + '-1');
+  if (lbl0) lbl0.textContent = isMono ? 'M' : 'L';
+  if (lbl1) lbl1.textContent = 'R';
+
+  // Actualizar cada barra
+  const count = isMono ? 1 : 2;
+  for (let i = 0; i < count; i++) {
+    const chDb = levels[i] !== undefined ? levels[i] : -Infinity;
+    const pct = vuPct(chDb);
+    const bar = document.getElementById(`bar-${id}-${i}`);
+    const peakEl = document.getElementById(`peak-${id}-${i}`);
     if (bar) bar.style.height = pct.toFixed(1) + '%';
-
-    if (peaks[index]) {
-      if (channelDb > (Array.isArray(peakValues[name]) ? peakValues[name][index] ?? -Infinity : -Infinity)) {
-        peakValues[name][index] = channelDb;
-        peaks[index].style.top = `${100 - pct.toFixed(1)}%`;
-        clearTimeout(peakTimers[name]?.[index]);
-        peakTimers[name] = peakTimers[name] || [];
-        peakTimers[name][index] = setTimeout(() => {
-          peakValues[name][index] = -Infinity;
-          peaks[index].style.top = '100%';
+    if (peakEl) {
+      if (chDb > (peakValues[name][i] ?? -Infinity)) {
+        peakValues[name][i] = chDb;
+        peakEl.style.top = (100 - pct).toFixed(1) + '%';
+        clearTimeout(peakTimers[name][i]);
+        peakTimers[name][i] = setTimeout(() => {
+          peakValues[name][i] = -Infinity;
+          peakEl.style.top = '100%';
         }, 1500);
       }
     }
-
-    if (channels[index]) {
-      channels[index].style.display = index < trackCount ? 'flex' : 'none';
-    }
-  });
-
-  if (trackCount === 1) {
-    const label1 = document.querySelector(`#channel-0-${id} .vu-channel-label`);
-    if (label1) label1.textContent = 'M';
-  } else {
-    const label0 = document.querySelector(`#channel-0-${id} .vu-channel-label`);
-    const label1 = document.querySelector(`#channel-1-${id} .vu-channel-label`);
-    if (label0) label0.textContent = 'L';
-    if (label1) label1.textContent = 'R';
   }
 }
 
-/* ── CANDADO ── */
+/* ── CANDADO — bloquea TODO ── */
 function toggleLock() {
   locked = !locked;
-  document.getElementById('btn-lock').textContent = locked ? '🔒' : '🔓';
-  document.getElementById('btn-lock').classList.toggle('active', !locked);
-  document.querySelectorAll('.vol-row').forEach(el => {
-    el.classList.toggle('visible', !locked);
-  });
+  const btn = document.getElementById('btn-lock');
+  btn.textContent = locked ? '🔒' : '🔓';
+  btn.classList.toggle('active', !locked);
+
+  document.querySelectorAll('.fader-input').forEach(el => { el.disabled = locked; });
+  document.querySelectorAll('.fader-thumb').forEach(el => { el.classList.toggle('locked', locked); });
+  document.querySelectorAll('.btn').forEach(el => { el.disabled = locked; });
 }
 
-/* ── VOLUMEN ── */
-async function setVol(inputName, pct, id) {
-  document.getElementById('volval-' + id).textContent = pct + '%';
-  const db = pct <= 0 ? -100 : 20 * Math.log10(pct / 100);
+/* ── ESTADO INICIAL DEL CANAL (mute + monitor) ── */
+async function ensureChannelState(inputName, id) {
+  channelStates[inputName] = { muted: false, monitor: 'None' };
   try {
-    await obs.call('SetInputVolume', {
-      inputName,
-      inputVolumeDb: Math.round(db * 10) / 10
-    });
+    const r = await obs.call('GetInputMute', { inputName });
+    channelStates[inputName].muted = !!r.inputMuted;
+  } catch(e) {}
+  try {
+    const r = await obs.call('GetInputAudioMonitorType', { inputName });
+    channelStates[inputName].monitor = r.monitorType || 'None';
+  } catch(e) {}
+  updateChannelButtons(inputName, id);
+}
+
+function updateChannelButtons(inputName, id) {
+  const st = channelStates[inputName] || { muted: false, monitor: 'None' };
+  const muteBtn = document.getElementById('mute-' + id);
+  const monBtn  = document.getElementById('mon-' + id);
+  if (muteBtn) {
+    muteBtn.textContent = st.muted ? 'UNMUTE' : 'MUTE';
+    muteBtn.classList.toggle('active', st.muted);
+  }
+  if (monBtn) {
+    monBtn.textContent = st.monitor !== 'None' ? 'MON ON' : 'MON';
+    monBtn.classList.toggle('active', st.monitor !== 'None');
+  }
+}
+
+async function toggleMute(inputName, id) {
+  if (locked) return;
+  channelStates[inputName] = channelStates[inputName] || { muted: false, monitor: 'None' };
+  const desired = !channelStates[inputName].muted;
+  try {
+    await obs.call('SetInputMute', { inputName, inputMuted: desired });
+    channelStates[inputName].muted = desired;
+    updateChannelButtons(inputName, id);
+  } catch(e) { console.warn(e.message); }
+}
+
+async function toggleMonitor(inputName, id) {
+  if (locked) return;
+  channelStates[inputName] = channelStates[inputName] || { muted: false, monitor: 'None' };
+  const desired = channelStates[inputName].monitor === 'None' ? 'MonitorOnly' : 'None';
+  try {
+    await obs.call('SetInputAudioMonitorType', { inputName, monitorType: desired });
+    channelStates[inputName].monitor = desired;
+    updateChannelButtons(inputName, id);
   } catch(e) { console.warn(e.message); }
 }
 
@@ -751,4 +840,3 @@ show('screen-conn');
 </script>
 </body>
 </html>
-esto es lo que quiero subi
