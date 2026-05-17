@@ -177,9 +177,9 @@
 
   .meter-row {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     justify-content: center;
-    gap: 10px;
+    gap: 16px;
     width: 100%;
     flex: 1;
   }
@@ -202,6 +202,72 @@
     font-size: 11px;
     color: var(--muted);
     letter-spacing: 0.12em;
+  }
+
+  .vol-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-width: 64px;
+  }
+
+  .vol-col .vol-label {
+    font-size: 11px;
+    color: var(--text);
+    letter-spacing: 0.12em;
+  }
+
+  .vol-track {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: min(60vh, 560px);
+  }
+
+  .vol-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 180px;
+    height: 24px;
+    transform: rotate(-90deg);
+    transform-origin: center;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+
+  .vol-slider::-webkit-slider-runnable-track {
+    height: 6px;
+    background: #333;
+    border-radius: 999px;
+  }
+  .vol-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    margin-top: -5px;
+  }
+  .vol-slider::-moz-range-track {
+    height: 6px;
+    background: #333;
+    border-radius: 999px;
+  }
+  .vol-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+  }
+
+  .vol-value {
+    font-size: 11px;
+    color: var(--accent);
   }
 
   /* barra vúmetro */
@@ -302,19 +368,19 @@
 
   /* control de volumen */
   .vol-row {
+    display: none;
+  }
+  .vol-col {
     display: flex;
+    flex-direction: column;
     align-items: center;
     gap: 10px;
-    margin-top: 8px;
-    max-height: 40px;
+    min-width: 64px;
   }
-  .vol-row label { font-size: 11px; color: var(--text); white-space: nowrap; }
-  .vol-row input[type=range] {
-    flex: 1;
-    accent-color: var(--accent);
-    cursor: pointer;
-  }
-  .vol-row .vol-val { font-size: 11px; color: var(--accent); min-width: 38px; text-align: right; }
+  .vol-col .vol-label { font-size: 11px; color: var(--text); white-space: nowrap; }
+  .vol-track { display: flex; align-items: center; justify-content: center; }
+  .vol-slider { accent-color: var(--accent); cursor: pointer; }
+  .vol-value { font-size: 11px; color: var(--accent); }
 </style>
 </head>
 <body>
@@ -322,7 +388,7 @@
 <!-- ══ PANTALLA 1: conexión ══ -->
 <div id="screen-conn">
   <h1>OBS VU METER</h1>
-  <input type="text"     id="inp-host" value="ws://192.168.1.x:4455" placeholder="ws://IP:4455" />
+  <input type="text"     id="inp-host" value="ws://ip.46:4455" placeholder="ws://IP:4455" />
   <input type="password" id="inp-pass" placeholder="Contraseña OBS (opcional)" />
   <button id="btn-conn" onclick="doConnect()">CONECTAR</button>
   <span id="conn-error"></span>
@@ -545,11 +611,13 @@ function buildChannels() {
         </div>
       </div>
       <div class="ch-name">${name}</div>
-      <div class="vol-row" id="vol-${id}">
-        <label>VOL</label>
-        <input type="range" min="0" max="100" step="1" value="80"
-          oninput="setVol('${name}', this.value, '${id}')" />
-        <span class="vol-val" id="volval-${id}">80%</span>
+      <div class="vol-col" id="vol-${id}">
+        <div class="vol-label">VOL</div>
+        <div class="vol-track">
+          <input class="vol-slider" type="range" min="0" max="100" step="1" value="80"
+            oninput="setVol('${name}', this.value, '${id}')" />
+        </div>
+        <div class="vol-value" id="volval-${id}">80%</div>
       </div>`;
     container.appendChild(ch);
   });
