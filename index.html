@@ -173,7 +173,6 @@
     overflow: hidden;
   }
 
-  /* franja de color arriba del canal */
   .channel::before {
     content: '';
     position: absolute;
@@ -183,7 +182,6 @@
     border-radius: 18px 18px 0 0;
   }
 
-  /* valor dB en vivo — arriba del canal */
   .ch-db {
     font-size: 11px;
     color: var(--accent-color, var(--accent));
@@ -193,7 +191,6 @@
     white-space: nowrap;
   }
 
-  /* fila central: fader + vúmetros */
   .meter-row {
     display: flex;
     flex-direction: row;
@@ -230,7 +227,6 @@
     align-items: center;
   }
 
-  /* altura del fader: igual que .vu-track */
   .fader-track,
   .vu-track { height: min(62vh, 440px); }
 
@@ -267,7 +263,6 @@
 
   .fader-thumb.locked { background: #555; }
 
-  /* input range vertical invisible encima del track */
   .fader-input {
     position: absolute;
     top: 0; left: 0;
@@ -342,7 +337,6 @@
     letter-spacing: 0.1em;
   }
 
-  /* escala dB lateral */
   .vu-labels {
     display: flex;
     flex-direction: column;
@@ -360,7 +354,6 @@
     width: 26px;
   }
 
-  /* nombre de la fuente — abajo */
   .ch-name {
     font-size: 11px;
     color: #aaa;
@@ -373,7 +366,6 @@
     margin-top: 2px;
   }
 
-  /* botones MUTE / MONITOR */
   .channel-buttons {
     display: flex;
     flex-direction: row;
@@ -516,6 +508,10 @@ let locked = true;
 let peakTimers = {};
 let peakValues = {};
 let channelStates = {};
+
+// Constantes de monitor type para OBS WebSocket v5
+const MON_NONE    = 'OBS_MONITORING_TYPE_NONE';
+const MON_MONITOR = 'OBS_MONITORING_TYPE_MONITOR_ONLY';
 
 const ACCENT_COLORS = ['#f25f5c','#ff9f1c','#2ec4b6','#9d4edd','#8ac926','#e8ff47','#38bdf8'];
 
@@ -676,14 +672,16 @@ function buildChannels() {
   });
 }
 
-/* ── FADER ── */
+/* ── FADER ── FIX: castear pct a Number antes de comparar ── */
 async function onFader(inputName, id, pct) {
   if (locked) return;
-  const db = faderPctToDb(Number(pct));
+  const pctNum = Number(pct);
+  const db = faderPctToDb(pctNum);
   document.getElementById('fv-' + id).textContent = db.toFixed(1) + ' dB';
   document.getElementById('ff-' + id).style.height = pct + '%';
   document.getElementById('fth-' + id).style.bottom = 'calc(' + pct + '% - 4px)';
-  const obsDb = pct <= 0 ? -100 : db;
+  // FIX: usar pctNum (number) en la comparación, y clampear a rango válido de OBS (-100..0)
+  const obsDb = pctNum <= 0 ? -100 : Math.max(-100, Math.min(0, db));
   try {
     await obs.call('SetInputVolume', {
       inputName,
@@ -733,22 +731,18 @@ function updateVU(id, name, levels) {
   const isMono = levels.length <= 1;
   const db = levels.reduce((max, v) => Math.max(max, v), -Infinity);
 
-  // Valor dB en vivo arriba del canal
   const dbEl = document.getElementById('db-' + id);
   if (dbEl) dbEl.textContent = db <= -60 || db === -Infinity
     ? '-∞ dBFS' : (db >= 0 ? '0.0' : db.toFixed(1)) + ' dBFS';
 
-  // Mostrar/ocultar canal derecho según mono/stereo
   const ch1 = document.getElementById('vuch-' + id + '-1');
   if (ch1) ch1.style.display = isMono ? 'none' : 'flex';
 
-  // Etiquetas L/R o M
   const lbl0 = document.getElementById('lbl-' + id + '-0');
   const lbl1 = document.getElementById('lbl-' + id + '-1');
   if (lbl0) lbl0.textContent = isMono ? 'M' : 'L';
   if (lbl1) lbl1.textContent = 'R';
 
-  // Actualizar cada barra
   const count = isMono ? 1 : 2;
   for (let i = 0; i < count; i++) {
     const chDb = levels[i] !== undefined ? levels[i] : -Infinity;
@@ -770,7 +764,7 @@ function updateVU(id, name, levels) {
   }
 }
 
-/* ── CANDADO — bloquea TODO ── */
+/* ── CANDADO ── */
 function toggleLock() {
   locked = !locked;
   const btn = document.getElementById('btn-lock');
@@ -782,22 +776,22 @@ function toggleLock() {
   document.querySelectorAll('.btn').forEach(el => { el.disabled = locked; });
 }
 
-/* ── ESTADO INICIAL DEL CANAL (mute + monitor) ── */
+/* ── ESTADO INICIAL DEL CANAL ── FIX: usar enum de OBS WS v5 ── */
 async function ensureChannelState(inputName, id) {
-  channelStates[inputName] = { muted: false, monitor: 'None' };
+  channelStates[inputName] = { muted: false, monitor: MON_NONE };
   try {
     const r = await obs.call('GetInputMute', { inputName });
     channelStates[inputName].muted = !!r.inputMuted;
   } catch(e) {}
   try {
     const r = await obs.call('GetInputAudioMonitorType', { inputName });
-    channelStates[inputName].monitor = r.monitorType || 'None';
+    channelStates[inputName].monitor = r.monitorType || MON_NONE;
   } catch(e) {}
   updateChannelButtons(inputName, id);
 }
 
 function updateChannelButtons(inputName, id) {
-  const st = channelStates[inputName] || { muted: false, monitor: 'None' };
+  const st = channelStates[inputName] || { muted: false, monitor: MON_NONE };
   const muteBtn = document.getElementById('mute-' + id);
   const monBtn  = document.getElementById('mon-' + id);
   if (muteBtn) {
@@ -805,14 +799,15 @@ function updateChannelButtons(inputName, id) {
     muteBtn.classList.toggle('active', st.muted);
   }
   if (monBtn) {
-    monBtn.textContent = st.monitor !== 'None' ? 'MON ON' : 'MON';
-    monBtn.classList.toggle('active', st.monitor !== 'None');
+    // FIX: comparar contra la constante correcta de v5
+    monBtn.textContent = st.monitor !== MON_NONE ? 'MON ON' : 'MON';
+    monBtn.classList.toggle('active', st.monitor !== MON_NONE);
   }
 }
 
 async function toggleMute(inputName, id) {
   if (locked) return;
-  channelStates[inputName] = channelStates[inputName] || { muted: false, monitor: 'None' };
+  channelStates[inputName] = channelStates[inputName] || { muted: false, monitor: MON_NONE };
   const desired = !channelStates[inputName].muted;
   try {
     await obs.call('SetInputMute', { inputName, inputMuted: desired });
@@ -823,8 +818,9 @@ async function toggleMute(inputName, id) {
 
 async function toggleMonitor(inputName, id) {
   if (locked) return;
-  channelStates[inputName] = channelStates[inputName] || { muted: false, monitor: 'None' };
-  const desired = channelStates[inputName].monitor === 'None' ? 'MonitorOnly' : 'None';
+  channelStates[inputName] = channelStates[inputName] || { muted: false, monitor: MON_NONE };
+  // FIX: usar los enum correctos de OBS WebSocket v5
+  const desired = channelStates[inputName].monitor === MON_NONE ? MON_MONITOR : MON_NONE;
   try {
     await obs.call('SetInputAudioMonitorType', { inputName, monitorType: desired });
     channelStates[inputName].monitor = desired;
