@@ -158,9 +158,11 @@
   /* barra vúmetro */
   .vu-track {
     position: relative;
-    height: 22px;
+    width: 32px;
+    height: 180px;
+    margin: 0 auto;
     background: #0a0a0a;
-    border-radius: 3px;
+    border-radius: 14px;
     overflow: hidden;
     border: 1px solid #1e1e1e;
   }
@@ -169,8 +171,8 @@
   .vu-scale {
     position: absolute;
     inset: 0;
-    /* verde → amarillo → rojo, de izquierda (silencio) a derecha (0dB) */
-    background: linear-gradient(to right,
+    /* verde → amarillo → rojo, de abajo (silencio) a arriba (0dB) */
+    background: linear-gradient(to top,
       #1a4a1a 0%,
       #2d7a2d 40%,
       #5ab55a 60%,
@@ -182,13 +184,13 @@
     opacity: 0.18;
   }
 
-  /* barra activa que crece desde la izquierda */
+  /* barra activa que crece desde abajo */
   .vu-bar {
     position: absolute;
-    top: 0; left: 0; bottom: 0;
-    width: 0%;
-    /* mismo gradiente pero opaco, clippeado por width */
-    background: linear-gradient(to right,
+    left: 0; right: 0; bottom: 0;
+    height: 0%;
+    /* mismo gradiente pero opaco, clippeado por height */
+    background: linear-gradient(to top,
       #1a6b1a 0%,
       #2db52d 40%,
       #6edd6e 60%,
@@ -197,30 +199,30 @@
       #ff7700 90%,
       #ff2200 100%
     );
-    transition: width 0.04s linear;
-    border-radius: 2px;
+    transition: height 0.04s linear;
+    border-radius: 0 0 12px 12px;
   }
 
-  /* peak hold: línea vertical */
+  /* peak hold: línea horizontal */
   .vu-peak {
     position: absolute;
-    top: 0; bottom: 0;
-    width: 2px;
+    left: 0; right: 0;
+    height: 2px;
     background: #fff;
-    opacity: 0.7;
-    left: 0%;
-    transition: left 0.1s linear;
+    opacity: 0.8;
+    top: 100%;
+    transition: top 0.1s linear;
   }
 
   /* marcas dB */
   .vu-labels {
     display: flex;
-    justify-content: space-between;
-    padding: 3px 0 6px;
+    justify-content: center;
+    gap: 6px;
+    padding: 4px 0 8px;
     font-size: 9px;
     color: var(--muted);
     letter-spacing: 0;
-    /* las marcas van de -60 a 0, pero mostramos pocas */
   }
 
   /* nombre fuente */
@@ -488,20 +490,34 @@ function subscribeVU() {
       if (!selectedSources.includes(inp.inputName)) return;
       const id = safeid(inp.inputName);
 
-      // OBS manda levels como array de canales, cada canal [magnitude, peak, input_peak]
-      // Usamos el peak del primer canal (o el mayor si hay stereo)
-      let dbVal = -Infinity;
-      if (inp.inputLevelsMul && inp.inputLevelsMul.length > 0) {
-        inp.inputLevelsMul.forEach(ch => {
-          // ch[1] = peak en multiplicador lineal
-          const db = ch[1] > 0 ? 20 * Math.log10(ch[1]) : -Infinity;
-          if (db > dbVal) dbVal = db;
-        });
-      }
-
+      const dbVal = getInputDb(inp);
       updateVU(id, inp.inputName, dbVal);
     });
   });
+}
+
+function getInputDb(inp) {
+  const levels = inp.inputLevelsMul || inp.inputLevels || [];
+  let dbVal = -Infinity;
+
+  if (Array.isArray(levels) && levels.length) {
+    levels.forEach(ch => {
+      let peak = -Infinity;
+      if (Array.isArray(ch)) peak = ch[1] ?? ch[0] ?? -Infinity;
+      else if (ch && typeof ch === 'object') peak = ch.peak ?? ch.input_peak ?? ch[1] ?? -Infinity;
+      else if (typeof ch === 'number') peak = ch;
+
+      const db = peak > 0 ? 20 * Math.log10(peak) : -Infinity;
+      if (db > dbVal) dbVal = db;
+    });
+  }
+
+  if (dbVal === -Infinity) {
+    if (typeof inp.inputVolumeDb === 'number') dbVal = inp.inputVolumeDb;
+    else if (typeof inp.inputVolume === 'number' && inp.inputVolume > 0) dbVal = 20 * Math.log10(inp.inputVolume);
+  }
+
+  return dbVal;
 }
 
 /* ── ACTUALIZAR BARRA ── */
@@ -517,18 +533,18 @@ function updateVU(id, name, db) {
   const peak = document.getElementById('peak-' + id);
   const dbEl = document.getElementById('db-'   + id);
 
-  if (bar)  bar.style.width = pct.toFixed(1) + '%';
+  if (bar)  bar.style.height = pct.toFixed(1) + '%';
   if (dbEl) dbEl.textContent = db === -Infinity ? '-∞ dBFS'
     : (db >= 0 ? '0.0' : db.toFixed(1)) + ' dBFS';
 
   // peak hold
   if (db > (peakValues[name] ?? -Infinity)) {
     peakValues[name] = db;
-    if (peak) peak.style.left = pct.toFixed(1) + '%';
+    if (peak) peak.style.top = `${100 - pct.toFixed(1)}%`;
     clearTimeout(peakTimers[name]);
     peakTimers[name] = setTimeout(() => {
       peakValues[name] = -Infinity;
-      if (peak) peak.style.left = '0%';
+      if (peak) peak.style.top = '100%';
     }, 1500);
   }
 }
