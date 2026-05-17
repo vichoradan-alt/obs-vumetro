@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>OBS VU Meter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #111;
+    --surface: #1c1c1c;
+    --border: #2a2a2a;
+    --text: #ddd;
+    --muted: #555;
+    --accent: #e8ff47;
+  }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── conexión ── */
+  #screen-conn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    padding: 2rem;
+  }
+  #screen-conn h1 { font-size: 14px; letter-spacing: 0.15em; color: var(--accent); }
+  #screen-conn input {
+    width: 100%; max-width: 320px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    border-radius: 4px;
+    outline: none;
+  }
+  #screen-conn input:focus { border-color: var(--accent); }
+  #btn-conn {
+    width: 100%; max-width: 320px;
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 14px;
+    letter-spacing: 0.1em;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  #conn-error { font-size: 12px; color: #ff5555; min-height: 16px; }
+
+  /* ── selector de fuentes ── */
+  #screen-sources {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding: 1.5rem;
+    gap: 12px;
+  }
+  #screen-sources h2 { font-size: 12px; letter-spacing: 0.12em; color: var(--muted); }
+  .source-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .source-option:hover { border-color: #444; }
+  .source-option.selected { border-color: var(--accent); }
+  .source-option .chk {
+    width: 16px; height: 16px;
+    border: 1px solid var(--muted);
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .source-option.selected .chk {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .source-option .sname { font-size: 13px; }
+  #btn-monitor {
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 13px;
+    letter-spacing: 0.1em;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  #btn-monitor:disabled { opacity: 0.4; cursor: default; }
+
+  /* ── monitor / vúmetros ── */
+  #screen-monitor {
+    display: none;
+    flex: 1;
+    flex-direction: column;
+    padding: 1rem;
+    gap: 0;
+    overflow-y: auto;
+  }
+
+  /* toolbar */
+  .toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 12px;
+  }
+  .toolbar-title { font-size: 11px; letter-spacing: 0.12em; color: var(--muted); }
+  .toolbar-right { display: flex; gap: 10px; align-items: center; }
+  .icon-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 16px;
+    width: 34px; height: 34px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .icon-btn:hover { color: var(--text); border-color: #444; }
+  .icon-btn.active { color: var(--accent); border-color: var(--accent); }
+
+  /* canal */
+  .channel {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .channel:last-child { border-bottom: none; }
+
+  /* barra vúmetro */
+  .vu-track {
+    position: relative;
+    height: 22px;
+    background: #0a0a0a;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid #1e1e1e;
+  }
+
+  /* gradiente fijo de fondo (escala de color) */
+  .vu-scale {
+    position: absolute;
+    inset: 0;
+    /* verde → amarillo → rojo, de izquierda (silencio) a derecha (0dB) */
+    background: linear-gradient(to right,
+      #1a4a1a 0%,
+      #2d7a2d 40%,
+      #5ab55a 60%,
+      #b5b500 75%,
+      #e8c400 83%,
+      #ff6600 90%,
+      #ff2200 100%
+    );
+    opacity: 0.18;
+  }
+
+  /* barra activa que crece desde la izquierda */
+  .vu-bar {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 0%;
+    /* mismo gradiente pero opaco, clippeado por width */
+    background: linear-gradient(to right,
+      #1a6b1a 0%,
+      #2db52d 40%,
+      #6edd6e 60%,
+      #d4d400 75%,
+      #ffdd00 83%,
+      #ff7700 90%,
+      #ff2200 100%
+    );
+    transition: width 0.04s linear;
+    border-radius: 2px;
+  }
+
+  /* peak hold: línea vertical */
+  .vu-peak {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: #fff;
+    opacity: 0.7;
+    left: 0%;
+    transition: left 0.1s linear;
+  }
+
+  /* marcas dB */
+  .vu-labels {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0 6px;
+    font-size: 9px;
+    color: var(--muted);
+    letter-spacing: 0;
+    /* las marcas van de -60 a 0, pero mostramos pocas */
+  }
+
+  /* nombre fuente */
+  .ch-name {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 4px;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* valor dB en vivo */
+  .ch-db {
+    font-size: 11px;
+    color: var(--accent);
+    text-align: right;
+    margin-bottom: 4px;
+  }
+
+  /* control de volumen (oculto por defecto, visible si desbloqueado) */
+  .vol-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 8px;
+    overflow: hidden;
+    max-height: 0;
+    transition: max-height 0.3s ease;
+  }
+  .vol-row.visible { max-height: 40px; }
+  .vol-row label { font-size: 10px; color: var(--muted); white-space: nowrap; }
+  .vol-row input[type=range] {
+    flex: 1;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .vol-row .vol-val { font-size: 10px; color: var(--accent); min-width: 38px; text-align: right; }
+</style>
+</head>
+<body>
+
+<!-- ══ PANTALLA 1: conexión ══ -->
+<div id="screen-conn">
+  <h1>OBS VU METER</h1>
+  <input type="text"     id="inp-host" value="ws://192.168.1.x:4455" placeholder="ws://IP:4455" />
+  <input type="password" id="inp-pass" placeholder="Contraseña OBS (opcional)" />
+  <button id="btn-conn" onclick="doConnect()">CONECTAR</button>
+  <span id="conn-error"></span>
+</div>
+
+<!-- ══ PANTALLA 2: elegir fuentes ══ -->
+<div id="screen-sources">
+  <h2>ELEGÍ LAS FUENTES A MONITOREAR</h2>
+  <div id="source-list"></div>
+  <button id="btn-monitor" disabled onclick="goMonitor()">VER VÚMETROS</button>
+</div>
+
+<!-- ══ PANTALLA 3: vúmetros ══ -->
+<div id="screen-monitor">
+  <div class="toolbar">
+    <span class="toolbar-title">VU METER</span>
+    <div class="toolbar-right">
+      <button class="icon-btn" id="btn-lock" title="Candado volumen" onclick="toggleLock()">🔒</button>
+      <button class="icon-btn" title="Volver a fuentes" onclick="goSources()">＋</button>
+    </div>
+  </div>
+  <div id="channels"></div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════════════════
+     LIBRERÍA OBSWebSocket — no modificar
+══════════════════════════════════════════════════ -->
+<script>
+class OBSWebSocket {
+  constructor() {
+    this._ws = null;
+    this._msgId = 1;
+    this._pending = {};
+    this._handlers = {};
+    this._lifecycle = {};
+  }
+  connect(url, password = '') {
+    return new Promise((resolve, reject) => {
+      if (this._ws) this.disconnect();
+      this._ws = new WebSocket(url);
+      this._ws.onopen = () => this._lifecycle.open?.();
+      this._ws.onmessage = async (ev) => {
+        const msg = JSON.parse(ev.data);
+        await this._handleOp(msg, password, resolve, reject);
+      };
+      this._ws.onerror = () => reject(new Error('No se pudo conectar'));
+      this._ws.onclose = () => { this._ws = null; this._lifecycle.close?.(); };
+    });
+  }
+  disconnect() { if (this._ws) { this._ws.close(); this._ws = null; } }
+  call(requestType, requestData = {}) {
+    return new Promise((resolve, reject) => {
+      if (!this._ws || this._ws.readyState !== WebSocket.OPEN)
+        return reject(new Error('No conectado'));
+      const requestId = String(this._msgId++);
+      this._pending[requestId] = { resolve, reject };
+      this._send(6, { requestType, requestId, requestData });
+    });
+  }
+  on(eventType, callback) {
+    if (!this._handlers[eventType]) this._handlers[eventType] = [];
+    this._handlers[eventType].push(callback);
+    return this;
+  }
+  onLifecycle(event, callback) { this._lifecycle[event] = callback; return this; }
+  async _handleOp(msg, password, resolve, reject) {
+    if (msg.op === 0) await this._identify(msg.d, password);
+    else if (msg.op === 2) { resolve(); this._lifecycle.identified?.(); }
+    else if (msg.op === 5) this._dispatchEvent(msg.d);
+    else if (msg.op === 7) this._resolveRequest(msg.d);
+  }
+  async _identify(hello, password) {
+    let authentication;
+    if (hello.authentication && password) {
+      const enc = new TextEncoder();
+      const s = await crypto.subtle.digest('SHA-256', enc.encode(password + hello.authentication.salt));
+      const secret = btoa(String.fromCharCode(...new Uint8Array(s)));
+      const a = await crypto.subtle.digest('SHA-256', enc.encode(secret + hello.authentication.challenge));
+      authentication = btoa(String.fromCharCode(...new Uint8Array(a)));
+    }
+    this._send(1, { rpcVersion: 1, ...(authentication ? { authentication } : {}) });
+  }
+  _dispatchEvent({ eventType, eventData }) {
+    (this._handlers[eventType] || []).forEach(fn => fn(eventData));
+  }
+  _resolveRequest({ requestId, requestStatus, responseData }) {
+    const cb = this._pending[requestId];
+    if (!cb) return;
+    delete this._pending[requestId];
+    if (requestStatus.code === 100) cb.resolve(responseData || {});
+    else cb.reject(new Error(`OBS ${requestStatus.code}: ${requestStatus.comment}`));
+  }
+  _send(op, d) { this._ws.send(JSON.stringify({ op, d })); }
+}
+</script>
+
+<!-- ══════════════════════════════════════════════════════════════════
+     APLICACIÓN — modificar acá
+══════════════════════════════════════════════════ -->
+<script>
+const obs = new OBSWebSocket();
+let selectedSources = [];   // nombres de fuentes elegidas
+let locked = true;          // candado de volumen
+let peakTimers = {};        // timers para decay del peak hold
+let peakValues = {};        // último peak por fuente
+
+/* ── pantallas ── */
+function show(id) {
+  ['screen-conn','screen-sources','screen-monitor'].forEach(s => {
+    document.getElementById(s).style.display = s === id ? 'flex' : 'none';
+  });
+}
+
+/* ── CONECTAR ── */
+async function doConnect() {
+  const host = document.getElementById('inp-host').value.trim();
+  const pass = document.getElementById('inp-pass').value;
+  const errEl = document.getElementById('conn-error');
+  errEl.textContent = 'Conectando...';
+  document.getElementById('btn-conn').disabled = true;
+  try {
+    await obs.connect(host, pass);
+    errEl.textContent = '';
+    await loadSources();
+    show('screen-sources');
+  } catch(e) {
+    errEl.textContent = e.message;
+    document.getElementById('btn-conn').disabled = false;
+  }
+}
+
+/* ── CARGAR FUENTES DE AUDIO ── */
+async function loadSources() {
+  const { inputs } = await obs.call('GetInputList');
+
+  // Pedimos solo las que tienen tipo de audio conocido
+  // pero también aceptamos cualquiera que OBS reporte como audio
+  const audioKinds = [
+    'wasapi_input_capture','wasapi_output_capture',
+    'pulse_input_capture','pulse_output_capture',
+    'coreaudio_input_capture','coreaudio_output_capture',
+    'dshow_input','alsa_input_capture'
+  ];
+
+  // Filtramos por tipo conocido; si no hay ninguno mostramos todos
+  let sources = inputs.filter(i => audioKinds.includes(i.inputKind));
+  if (!sources.length) sources = inputs;
+
+  const list = document.getElementById('source-list');
+  list.innerHTML = '';
+  sources.forEach(src => {
+    const el = document.createElement('div');
+    el.className = 'source-option';
+    el.dataset.name = src.inputName;
+    el.innerHTML = `<div class="chk"></div><span class="sname">${src.inputName}</span>`;
+    el.onclick = () => toggleSource(el, src.inputName);
+    list.appendChild(el);
+  });
+}
+
+function toggleSource(el, name) {
+  el.classList.toggle('selected');
+  el.querySelector('.chk').textContent = el.classList.contains('selected') ? '✓' : '';
+  selectedSources = [...document.querySelectorAll('.source-option.selected')]
+    .map(e => e.dataset.name);
+  document.getElementById('btn-monitor').disabled = selectedSources.length === 0;
+}
+
+/* ── IR A MONITOR ── */
+function goMonitor() {
+  buildChannels();
+  subscribeVU();
+  show('screen-monitor');
+}
+
+function goSources() {
+  show('screen-sources');
+}
+
+/* ── CONSTRUIR CANALES ── */
+function buildChannels() {
+  const container = document.getElementById('channels');
+  container.innerHTML = '';
+  selectedSources.forEach(name => {
+    peakValues[name] = -Infinity;
+    const id = safeid(name);
+    const ch = document.createElement('div');
+    ch.className = 'channel';
+    ch.innerHTML = `
+      <div class="ch-db" id="db-${id}">— dBFS</div>
+      <div class="vu-track">
+        <div class="vu-scale"></div>
+        <div class="vu-bar"  id="bar-${id}"></div>
+        <div class="vu-peak" id="peak-${id}"></div>
+      </div>
+      <div class="vu-labels">
+        <span>-60</span><span>-48</span><span>-36</span>
+        <span>-24</span><span>-18</span><span>-12</span>
+        <span>-6</span><span>-3</span><span>0</span>
+      </div>
+      <div class="ch-name">${name}</div>
+      <div class="vol-row" id="vol-${id}">
+        <label>VOL</label>
+        <input type="range" min="0" max="100" step="1" value="80"
+          oninput="setVol('${name}', this.value, '${id}')" />
+        <span class="vol-val" id="volval-${id}">80%</span>
+      </div>`;
+    container.appendChild(ch);
+  });
+}
+
+/* ── SUSCRIBIRSE A InputVolumeMeters ── */
+function subscribeVU() {
+  // El evento InputVolumeMeters llega continuamente desde OBS
+  obs.on('InputVolumeMeters', ({ inputs }) => {
+    inputs.forEach(inp => {
+      if (!selectedSources.includes(inp.inputName)) return;
+      const id = safeid(inp.inputName);
+
+      // OBS manda levels como array de canales, cada canal [magnitude, peak, input_peak]
+      // Usamos el peak del primer canal (o el mayor si hay stereo)
+      let dbVal = -Infinity;
+      if (inp.inputLevelsMul && inp.inputLevelsMul.length > 0) {
+        inp.inputLevelsMul.forEach(ch => {
+          // ch[1] = peak en multiplicador lineal
+          const db = ch[1] > 0 ? 20 * Math.log10(ch[1]) : -Infinity;
+          if (db > dbVal) dbVal = db;
+        });
+      }
+
+      updateVU(id, inp.inputName, dbVal);
+    });
+  });
+}
+
+/* ── ACTUALIZAR BARRA ── */
+function updateVU(id, name, db) {
+  const MIN_DB = -60;
+  const MAX_DB = 0;
+
+  // porcentaje de ancho: 0% = silencio total, 100% = 0dBFS
+  const pct = db <= MIN_DB ? 0 : db >= MAX_DB ? 100
+    : ((db - MIN_DB) / (MAX_DB - MIN_DB)) * 100;
+
+  const bar  = document.getElementById('bar-'  + id);
+  const peak = document.getElementById('peak-' + id);
+  const dbEl = document.getElementById('db-'   + id);
+
+  if (bar)  bar.style.width = pct.toFixed(1) + '%';
+  if (dbEl) dbEl.textContent = db === -Infinity ? '-∞ dBFS'
+    : (db >= 0 ? '0.0' : db.toFixed(1)) + ' dBFS';
+
+  // peak hold
+  if (db > (peakValues[name] ?? -Infinity)) {
+    peakValues[name] = db;
+    if (peak) peak.style.left = pct.toFixed(1) + '%';
+    clearTimeout(peakTimers[name]);
+    peakTimers[name] = setTimeout(() => {
+      peakValues[name] = -Infinity;
+      if (peak) peak.style.left = '0%';
+    }, 1500);
+  }
+}
+
+/* ── CANDADO ── */
+function toggleLock() {
+  locked = !locked;
+  document.getElementById('btn-lock').textContent = locked ? '🔒' : '🔓';
+  document.getElementById('btn-lock').classList.toggle('active', !locked);
+  document.querySelectorAll('.vol-row').forEach(el => {
+    el.classList.toggle('visible', !locked);
+  });
+}
+
+/* ── VOLUMEN ── */
+async function setVol(inputName, pct, id) {
+  document.getElementById('volval-' + id).textContent = pct + '%';
+  const db = pct <= 0 ? -100 : 20 * Math.log10(pct / 100);
+  try {
+    await obs.call('SetInputVolume', {
+      inputName,
+      inputVolumeDb: Math.round(db * 10) / 10
+    });
+  } catch(e) { console.warn(e.message); }
+}
+
+/* ── utilidad ── */
+function safeid(name) { return name.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+/* inicio */
+show('screen-conn');
+</script>
+</body>
+</html>
+esto es lo que quiero subi
