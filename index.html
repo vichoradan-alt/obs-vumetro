@@ -120,7 +120,17 @@
     flex-direction: column;
     padding: 1rem;
     gap: 0;
+    overflow: hidden;
+  }
+
+  #channels {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    align-items: stretch;
     overflow-y: auto;
+    padding-right: 4px;
   }
 
   /* toolbar */
@@ -151,23 +161,40 @@
   /* canal */
   .channel {
     display: flex;
-    justify-content: center;
-    align-items: flex-end;
-    gap: 16px;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--border);
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 14px;
+    padding: 12px 8px;
+    background: rgba(255,255,255,0.015);
+    border: 1px solid #222;
+    border-radius: 16px;
+    min-height: min(75vh, 520px);
+    max-height: 78vh;
   }
+
   .channel:last-child { border-bottom: none; }
+
+  .meter-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    flex: 1;
+  }
 
   /* barra vúmetro */
   .vu-track {
     position: relative;
-    width: 32px;
-    height: 180px;
-    background: #0a0a0a;
-    border-radius: 14px;
+    width: 48px;
+    height: min(72vh, 680px);
+    max-height: 680px;
+    background: #121212;
+    border-radius: 24px;
     overflow: hidden;
-    border: 1px solid #1e1e1e;
+    border: 1px solid #2d2d2d;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.04);
   }
 
   /* gradiente fijo de fondo (escala de color) */
@@ -184,7 +211,7 @@
       #ff6600 90%,
       #ff2200 100%
     );
-    opacity: 0.18;
+    opacity: 0.16;
   }
 
   /* barra activa que crece desde abajo */
@@ -192,18 +219,15 @@
     position: absolute;
     left: 0; right: 0; bottom: 0;
     height: 0%;
-    /* mismo gradiente pero opaco, clippeado por height */
     background: linear-gradient(to top,
-      #1a6b1a 0%,
-      #2db52d 40%,
-      #6edd6e 60%,
-      #d4d400 75%,
-      #ffdd00 83%,
-      #ff7700 90%,
-      #ff2200 100%
+      #b7ff5d 0%,
+      #d7ff5d 35%,
+      #ffe55d 60%,
+      #ff9d4d 80%,
+      #ff4e4e 100%
     );
     transition: height 0.04s linear;
-    border-radius: 0 0 12px 12px;
+    border-radius: 0 0 20px 20px;
   }
 
   /* peak hold: línea horizontal */
@@ -211,8 +235,8 @@
     position: absolute;
     left: 0; right: 0;
     height: 2px;
-    background: #fff;
-    opacity: 0.8;
+    background: #ffffffcc;
+    opacity: 0.9;
     top: 100%;
     transition: top 0.1s linear;
   }
@@ -223,23 +247,26 @@
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    height: 180px;
-    font-size: 9px;
+    height: min(72vh, 680px);
+    font-size: 10px;
     color: var(--muted);
-    letter-spacing: 0;
-    margin-right: 8px;
+    letter-spacing: 0.08em;
   }
-  .vu-labels span { display: block; }
+  .vu-labels span {
+    display: block;
+    width: 28px;
+    text-align: center;
+  }
 
   /* nombre fuente */
   .ch-name {
     font-size: 11px;
     color: var(--muted);
-    letter-spacing: 0.12em;
+    letter-spacing: 0.18em;
     writing-mode: vertical-rl;
     text-orientation: mixed;
     transform: rotate(180deg);
-    max-height: 180px;
+    max-height: min(12vh, 120px);
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -474,15 +501,17 @@ function buildChannels() {
     ch.className = 'channel';
     ch.innerHTML = `
       <div class="ch-db" id="db-${id}">— dBFS</div>
-      <div class="vu-track">
-        <div class="vu-scale"></div>
-        <div class="vu-bar"  id="bar-${id}"></div>
-        <div class="vu-peak" id="peak-${id}"></div>
-      </div>
-      <div class="vu-labels">
-        <span>0</span><span>-3</span><span>-6</span>
-        <span>-12</span><span>-18</span><span>-24</span>
-        <span>-36</span><span>-48</span><span>-60</span>
+      <div class="meter-row">
+        <div class="vu-labels">
+          <span>0</span><span>-3</span><span>-6</span>
+          <span>-12</span><span>-18</span><span>-24</span>
+          <span>-36</span><span>-48</span><span>-60</span>
+        </div>
+        <div class="vu-track">
+          <div class="vu-scale"></div>
+          <div class="vu-bar"  id="bar-${id}"></div>
+          <div class="vu-peak" id="peak-${id}"></div>
+        </div>
       </div>
       <div class="ch-name">${name}</div>
       <div class="vol-row" id="vol-${id}">
