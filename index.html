@@ -209,8 +209,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    min-width: 64px;
+    gap: 8px;
+    min-width: 72px;
   }
 
   .vol-col .vol-label {
@@ -224,15 +224,16 @@
     align-items: center;
     justify-content: center;
     height: min(60vh, 560px);
+    padding: 6px 0;
   }
 
   .vol-slider {
     -webkit-appearance: none;
     appearance: none;
-    width: 180px;
+    width: 220px;
     height: 24px;
     transform: rotate(-90deg);
-    transform-origin: center;
+    transform-origin: 50% 50%;
     accent-color: var(--accent);
     cursor: pointer;
   }
@@ -388,7 +389,7 @@
 <!-- ══ PANTALLA 1: conexión ══ -->
 <div id="screen-conn">
   <h1>OBS VU METER</h1>
-  <input type="text"     id="inp-host" value="ws://ip.46:4455" placeholder="ws://IP:4455" />
+  <input type="text"     id="inp-host" value="ws://192.168.1.46:4455" placeholder="ws://IP:4455" />
   <input type="password" id="inp-pass" placeholder="Contraseña OBS (opcional)" />
   <button id="btn-conn" onclick="doConnect()">CONECTAR</button>
   <span id="conn-error"></span>
